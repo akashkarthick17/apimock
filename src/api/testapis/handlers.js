@@ -1,4 +1,4 @@
 export let hello = (request, h) => {
-  return h('Hello, world');
+  return h.response('Hello, world');
 };
 
