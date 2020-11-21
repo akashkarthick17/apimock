@@ -1,63 +1,34 @@
 import {
-  CREATE_USER_QUERY,
-  DELETE_USER_QUERY,
-  GET_USER_QUERY,
-  UPDATE_USER_QUERY
-} from '../constants/queries';
-import { MySqlClient } from './db-utility';
+  redisDelAsync,
+  redisExistsAsync,
+  redisGetAsync,
+  redisSetAsync
+} from '../utility/db-utility';
+
+const USER_KEY_PREFIX = 'user:';
 
 export const getUserWalletById = async (userId) => {
-  return MySqlClient.executeQuery(GET_USER_QUERY, [userId]).then((res) => {
-    if (res.length === 1) {
-      return res[0];
-    }
-    return null;
-  });
+  return redisGetAsync(USER_KEY_PREFIX + userId).then((user) =>
+    JSON.parse(user)
+  );
 };
 
-export const createUserWallet = async (
-  userId,
-  hasDeposited,
-  walletBalance,
-  numberOfDeposits
+export const upsertUserWalletById = async (
+  user_id,
+  has_deposited,
+  wallet_balance,
+  number_of_deposits
 ) => {
-  return MySqlClient.executeQuery(CREATE_USER_QUERY, [
-    userId,
-    hasDeposited,
-    walletBalance,
-    numberOfDeposits,
-  ]).then((res) => {
-    if (res.affectedRows > 0) {
-      return true;
-    }
-    return false;
-  });
-};
-
-export const updateUserWalletById = async (
-  userId,
-  hasDeposited,
-  walletBalance,
-  numberOfDeposits
-) => {
-  return MySqlClient.executeQuery(UPDATE_USER_QUERY, [
-    hasDeposited,
-    walletBalance,
-    numberOfDeposits,
-    userId,
-  ]).then((res) => {
-    if (res.affectedRows > 0) {
-      return true;
-    }
-    return false;
-  });
+  return redisSetAsync(
+    USER_KEY_PREFIX + user_id,
+    JSON.stringify({ has_deposited, wallet_balance, number_of_deposits })
+  ).then((res) => res === 'OK');
 };
 
 export const deleteUserWalletById = async (userId) => {
-  return MySqlClient.executeQuery(DELETE_USER_QUERY, [userId]).then((res) => {
-    if (res.affectedRows > 0) {
-      return true;
-    }
-    return false;
-  });
+  return redisDelAsync(USER_KEY_PREFIX + userId).then((res) => res === 1);
+};
+
+export const isUserIdExists = async (userId) => {
+  return redisExistsAsync(USER_KEY_PREFIX + userId).then((res) => res === 1);
 };

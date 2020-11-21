@@ -228,14 +228,14 @@ export const addUserWallet = async (request, h) => {
   if (userId && hasDeposited && walletBalance && numberOfDeposits) {
     try {
       // Check if the user id is duplicate.
-      const user = await UserWalletUtility.getUserWalletById(userId);
+      const isUserIdExists = await UserWalletUtility.isUserIdExists(userId);
 
-      if (user) {
+      if (isUserIdExists) {
         return h.response(ErrorResponse.DUPLICATE_USER_ID).code(500);
       }
 
       // Create the user using the given details.
-      const isUserCreated = await UserWalletUtility.createUserWallet(
+      const isUserCreated = await UserWalletUtility.upsertUserWalletById(
         userId,
         hasDeposited,
         walletBalance,
@@ -269,19 +269,24 @@ export const updateUserWallet = async (request, h) => {
 
   if (userId && hasDeposited && walletBalance && numberOfDeposits) {
     try {
-      // Create the user using the given details.
-      const isUserUpdated = await UserWalletUtility.updateUserWalletById(
-        userId,
-        hasDeposited,
-        walletBalance,
-        numberOfDeposits
-      );
+      // Check if the user id is duplicate.
+      const isUserIdExists = await UserWalletUtility.isUserIdExists(userId);
 
-      // Check if the user has been created successfully.
-      if (isUserUpdated) {
-        return h.response({ code: 200, message: 'Successfully Updated.' });
-      } else {
-        return h.response(ErrorResponse.ERR_UPDATE).code(500);
+      if (isUserIdExists) {
+        // Create the user using the given details.
+        const isUserUpdated = await UserWalletUtility.upsertUserWalletById(
+          userId,
+          hasDeposited,
+          walletBalance,
+          numberOfDeposits
+        );
+
+        // Check if the user has been created successfully.
+        if (isUserUpdated) {
+          return h.response({ code: 200, message: 'Successfully Updated.' });
+        } else {
+          return h.response(ErrorResponse.ERR_UPDATE).code(500);
+        }
       }
     } catch (e) {
       return h.response(ErrorResponse.ERR_UPDATE).code(500);
